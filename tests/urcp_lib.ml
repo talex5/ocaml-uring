@@ -35,8 +35,6 @@ type req = {
 let pp_req ppf {op; len; off; fileoff; t; _ } =
   Fmt.pf ppf "[%s fileoff %d len %d off %d] [%a]" (match op with |`R -> "r" |`W -> "w") fileoff len off pp t
 
-let empty_req t = { op=`R; iov=Iovec.empty; len=0; off=0; fileoff=0; t}
-
 (* Perform a complete read into bufs. *)
 let queue_read uring t len =
   let ba = Iovec.Buffer.create len in
@@ -156,7 +154,7 @@ let run_cp block_size queue_depth infile outfile () =
    let insize = get_file_size infd in
    let t = { block_size; insize; offset=0; reads=0; writes=0; write_left=insize; read_left=insize; infd; outfd } in
    Logs.debug (fun l -> l "starting: %a bs=%d qd=%d" pp t block_size queue_depth);
-   let uring = Uring.create ~queue_depth ~default:(empty_req t) () in
+   let uring = Uring.create ~queue_depth () in
    copy_file uring t;
    Unix.close infd;
    Unix.close outfd;
