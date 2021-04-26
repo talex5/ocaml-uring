@@ -26,6 +26,7 @@ type 'a t =
   { data: 'a array
   (* Pool of potentially-empty data slots. Invariant: an unfreed pointer [p]
      into this array is valid iff [free_tail_relation.(p) = slot_taken]. *)
+  ; default: 'a
   ; mutable free_head: ptr
   ; free_tail_relation: ptr array
   (* A linked list of pointers to free slots, with [free_head] being the first
@@ -42,8 +43,7 @@ type 'a t =
   ; length: int
   }
 
-let create : type a. int -> a t =
- fun n ->
+let create ~default n =
   if n < 0 || n > Sys.max_array_length then invalid_arg "Heap.create" ;
   (* Every slot is free, and all but the last have a free successor. *)
   let free_head = if n = 0 then free_list_nil else 0 in
@@ -52,20 +52,20 @@ let create : type a. int -> a t =
   let data =
     (* No slot in [free_tail_relation] is [slot_taken], so initial data is
        inaccessible. *)
-    Array.make n (Obj.magic `invalid : a)
+    Array.make n default
   in
-  { data; free_head; free_tail_relation; length = n }
+  { data; default; free_head; free_tail_relation; length = n }
 
 exception No_space
 
 let alloc t a =
   let ptr = t.free_head in
   if ptr = free_list_nil then raise No_space;
-  Array.unsafe_set t.data ptr a;
+  Array.set t.data ptr a;
 
   (* Drop [ptr] from the free list. *)
-  let tail = Array.unsafe_get t.free_tail_relation ptr in
-  Array.unsafe_set t.free_tail_relation ptr slot_taken;
+  let tail = Array.get t.free_tail_relation ptr in
+  Array.set t.free_tail_relation ptr slot_taken;
   t.free_head <- tail;
 
   ptr
@@ -74,19 +74,19 @@ let free : type a. a t -> ptr -> a =
  fun t ptr ->
   assert (ptr >= 0) (* [alloc] returns only valid pointers. *);
   if ptr >= t.length then Fmt.invalid_arg "Heap.free: invalid pointer %d" ptr;
-  let slot_state = Array.unsafe_get t.free_tail_relation ptr in
+  let slot_state = Array.get t.free_tail_relation ptr in
   if slot_state <> slot_taken then invalid_arg "Heap.free: pointer already freed";
 
   (* [t.free_tail_relation.(ptr) = slot_taken], so [t.data.(ptr)] is valid. *)
-  let datum = Array.unsafe_get t.data ptr in
+  let datum = Array.get t.data ptr in
 
   (* Cons [ptr] to the free-list. *)
-  Array.unsafe_set t.free_tail_relation ptr t.free_head;
+  Array.set t.free_tail_relation ptr t.free_head;
   t.free_head <- ptr;
 
   (* We've marked this slot as free, so [t.data.(ptr)] is inaccessible. We zero
      it to allow it to be GC-ed. *)
   assert (t.free_tail_relation.(ptr) <> slot_taken);
-  Array.unsafe_set t.data ptr (Obj.magic `invalid : a);
+  Array.set t.data ptr t.default;
 
   datum

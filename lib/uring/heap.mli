@@ -17,7 +17,7 @@
 type 'a t
 (** A bounded heap of values of type ['a]. *)
 
-val create : int -> _ t
+val create : default:'a -> int -> 'a t
 (** [create n] is a heap that holds at most [n] elements. *)
 
 type ptr = private int

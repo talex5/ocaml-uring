@@ -24,7 +24,7 @@ module Region = Region
 type 'a t
 (** ['a t] is a reference to an Io_uring structure. *)
 
-val create : ?fixed_buf_len:int -> queue_depth:int -> unit -> 'a t
+val create : ?fixed_buf_len:int -> default:'a -> queue_depth:int -> unit -> 'a t
 (** [create ?fixed_buf_len ~queue_depth] will return a fresh Io_uring structure
     [t]. Each [t] has associated with it a fixed region of memory that is used
     for the "fixed buffer" mode of io_uring to avoid data copying between

@@ -77,14 +77,14 @@ type 'a t = {
 
 let default_iobuf_len = 1024 * 1024 (* 1MB *)
 
-let create ?(fixed_buf_len=default_iobuf_len) ~queue_depth () =
+let create ?(fixed_buf_len=default_iobuf_len) ~default ~queue_depth () =
   if queue_depth < 1 then Fmt.invalid_arg "Non-positive queue depth: %d" queue_depth;
   let uring = Uring.create queue_depth in
   (* TODO posix memalign this to page *)
   let fixed_iobuf = Iovec.Buffer.create fixed_buf_len in
   Uring.register_bigarray uring fixed_iobuf;
   Gc.finalise Uring.exit uring;
-  let user_data = Heap.create queue_depth in
+  let user_data = Heap.create ~default queue_depth in
   { uring; fixed_iobuf; user_data; dirty=false; queue_depth }
 
 let realloc t iobuf =
