@@ -36,8 +36,6 @@ type req = {
 let pp_req ppf {op; len; off; fixed_off; fileoff; t; _ } =
   Fmt.pf ppf "[%s fileoff %d len %d off %d fixedoff %d] [%a]" (match op with |`R -> "r" |`W -> "w") fileoff len off fixed_off pp t
 
-let empty_req t = { op=`R; fixed_off=0; len=0; off=0; fileoff=0; t}
-
 (* Perform a complete read into bufs. *)
 let queue_read uring t len =
   let fixed_off = Queue.pop t.freelist in
@@ -158,7 +156,7 @@ let run_cp block_size queue_depth infile outfile () =
    let t = { freelist; block_size; insize; offset=0; reads=0; writes=0; write_left=insize; read_left=insize; infd; outfd } in
    Logs.debug (fun l -> l "starting: %a bs=%d qd=%d" pp t block_size queue_depth);
    let fixed_buf_len = queue_depth * block_size in
-   let uring = Uring.create ~fixed_buf_len ~queue_depth ~default:(empty_req t) () in
+   let uring = Uring.create ~fixed_buf_len ~queue_depth () in
    copy_file uring t;
    Unix.close infd;
    Unix.close outfd;
