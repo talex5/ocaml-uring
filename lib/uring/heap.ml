@@ -20,10 +20,12 @@ let ( <> ) : int -> int -> bool = ( <> )
 let slot_taken = -1
 let free_list_nil = -2
 
+type 'a entry_rec = { data : 'a; extra_data : unit; mutable ptr : int }
+
 (* [extra_data] is for keeping pointers passed to C alive. *)
 type 'a entry =
-  | Empty : 'a entry
-  | Entry : { data : 'a; extra_data : 'b; mutable ptr : int } -> 'a entry
+  | Empty
+  | Entry of 'a entry_rec
 
 (* Free-list allocator *)
 type 'a t =
