@@ -52,8 +52,7 @@ let ptr = function
     else ptr
   | Empty -> assert false
 
-let create : type a. int -> a t =
- fun n ->
+let create n =
   if n < 0 || n > Sys.max_array_length then invalid_arg "Heap.create" ;
   (* Every slot is free, and all but the last have a free successor. *)
   let free_head = if n = 0 then free_list_nil else 0 in
