@@ -20,16 +20,16 @@ let ( <> ) : int -> int -> bool = ( <> )
 let slot_taken = -1
 let free_list_nil = -2
 
-type 'a entry_rec = { entry_data : 'a; extra_data : unit; mutable ptr : int }
+type entry_rec = { entry_data : unit; extra_data : unit; mutable ptr : int }
 
 (* [extra_data] is for keeping pointers passed to C alive. *)
-type 'a entry =
+type entry =
   | Empty
-  | Entry of 'a entry_rec
+  | Entry of entry_rec
 
 (* Free-list allocator *)
-type 'a t =
-  { data: 'a entry array
+type t =
+  { data: entry array
   (* Pool of potentially-empty data slots. Invariant: an unfreed pointer [p]
      into this array is valid iff [free_tail_relation.(p) = slot_taken]. *)
   ; mutable free_head: int
@@ -56,7 +56,7 @@ let get_ptr = function
 (*@ ptr x
       raises Invalid_argument _ -> True *)
 
-let create n =
+let create n : t =
   if n < 0 || n > Sys.max_array_length then invalid_arg "Heap.create" ;
   (* Every slot is free, and all but the last have a free successor. *)
   let free_head = if n = 0 then free_list_nil else 0 in
