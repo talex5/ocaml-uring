@@ -48,7 +48,7 @@ type 'a t =
   ; mutable in_use: int
   }
 
-let ptr = function
+let get_ptr = function
   | Entry { ptr; _ } ->
     if ptr = -1 then invalid_arg "Entry has already been freed!"
     else ptr
