@@ -20,7 +20,7 @@ let ( <> ) : int -> int -> bool = ( <> )
 let slot_taken = -1
 let free_list_nil = -2
 
-type 'a entry_rec = { data : 'a; extra_data : unit; mutable ptr : int }
+type 'a entry_rec = { entry_data : 'a; extra_data : unit; mutable ptr : int }
 
 (* [extra_data] is for keeping pointers passed to C alive. *)
 type 'a entry =
@@ -72,7 +72,7 @@ exception No_space
 let alloc t data ~extra_data =
   let ptr = t.free_head in
   if ptr = free_list_nil then raise No_space;
-  let entry = Entry { data; extra_data; ptr } in
+  let entry = Entry { entry_data = data; extra_data; ptr } in
   t.data.(ptr) <- entry;
 
   (* Drop [ptr] from the free list. *)
@@ -95,7 +95,7 @@ let free t ptr =
     | Empty -> assert false
     | Entry p ->
       p.ptr <- -1;
-      p.data
+      p.entry_data
   in
 
   (* Cons [ptr] to the free-list. *)
