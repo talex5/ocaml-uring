@@ -53,6 +53,8 @@ let ptr = function
     if ptr = -1 then invalid_arg "Entry has already been freed!"
     else ptr
   | Empty -> assert false
+(*@ ptr x
+      raises Invalid_argument _ -> True *)
 
 let create n =
   if n < 0 || n > Sys.max_array_length then invalid_arg "Heap.create" ;
