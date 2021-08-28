@@ -60,7 +60,7 @@ let create n =
   if n < 0 || n > Sys.max_array_length then invalid_arg "Heap.create" ;
   (* Every slot is free, and all but the last have a free successor. *)
   let free_head = if n = 0 then free_list_nil else 0 in
-  let free_tail_relation = Array.init n succ in
+  let free_tail_relation = Array.init n (fun i -> i + 1) in
   if n > 0 then free_tail_relation.(n - 1) <- free_list_nil;
   let data =
     (* No slot in [free_tail_relation] is [slot_taken], so initial data is
