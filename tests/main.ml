@@ -31,7 +31,7 @@ module Heap = struct
   let test_normal_usage () =
     let max_size = 10 in
     let t = Heap.create max_size in
-    let reference : (Heap.ptr, int) Hashtbl.t = Hashtbl.create max_size in
+    let reference : (int, int) Hashtbl.t = Hashtbl.create max_size in
     let currently_allocated = ref 0 in
     for _ = 1 to 100_000 do
       let attempt_alloc = !currently_allocated = 0 || Random.bool () in
@@ -81,18 +81,18 @@ module Heap = struct
     in
     let () =
       let t = Heap.create 2 in
-      let _ : Heap.ptr = Heap.ptr @@ Heap.alloc t () in
-      let _ : Heap.ptr = Heap.ptr @@ Heap.alloc t () in
+      let _ : int = Heap.ptr @@ Heap.alloc t () in
+      let _ : int = Heap.ptr @@ Heap.alloc t () in
       (* 3 > 2 *)
       check_raises_no_space ~__POS__ (fun () -> Heap.ptr @@ Heap.alloc t ())
     in
     let () =
       let t = Heap.create 3 in
       let p1 = Heap.ptr @@ Heap.alloc t 1 in
-      let _ : Heap.ptr = Heap.ptr @@ Heap.alloc t 2 in
+      let _ : int = Heap.ptr @@ Heap.alloc t 2 in
       check_int ~__POS__ ~expected:1 (Heap.free t p1);
-      let _ : Heap.ptr = Heap.ptr @@ Heap.alloc t 3 in
-      let _ : Heap.ptr = Heap.ptr @@ Heap.alloc t 4 in
+      let _ : int = Heap.ptr @@ Heap.alloc t 3 in
+      let _ : int = Heap.ptr @@ Heap.alloc t 4 in
       (* 2 - 1 + 2 > 3 *)
       check_raises_no_space ~__POS__ (fun () -> Heap.ptr @@ Heap.alloc t 5);
     in

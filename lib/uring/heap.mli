@@ -23,10 +23,7 @@ val create : int -> _ t
 type 'a entry
 (** An element in a heap. *)
 
-type ptr = private int
-(** The index of an entry. *)
-
-val ptr : 'a entry -> ptr
+val ptr : 'a entry -> int
 (** [ptr e] is the index of [e].
     @raise Invalid_arg if [e] has already been freed. *)
 
@@ -37,7 +34,7 @@ val alloc : 'a t -> 'a -> extra_data:'b -> 'a entry
     or raises {!No_space} if no space exists in [t].
     @param extra_data Prevent this from being GC'd until [free] is called. *)
 
-val free : 'a t -> ptr -> 'a
+val free : 'a t -> int -> 'a
 (** [free t p] returns the element referenced by [p] and removes it from the
     heap. Has undefined behaviour if [p] has already been freed. *)
 

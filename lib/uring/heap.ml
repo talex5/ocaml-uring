@@ -17,7 +17,6 @@
 let ( = ) : int -> int -> bool = ( = )
 let ( <> ) : int -> int -> bool = ( <> )
 
-type ptr = int
 let slot_taken = -1
 let free_list_nil = -2
 
@@ -31,8 +30,8 @@ type 'a t =
   { data: 'a entry array
   (* Pool of potentially-empty data slots. Invariant: an unfreed pointer [p]
      into this array is valid iff [free_tail_relation.(p) = slot_taken]. *)
-  ; mutable free_head: ptr
-  ; free_tail_relation: ptr array
+  ; mutable free_head: int
+  ; free_tail_relation: int array
   (* A linked list of pointers to free slots, with [free_head] being the first
      element and [free_tail_relation] mapping each free slot to the next one.
      Each entry [x] signals a state of the corresponding [data.(x)] slot:
@@ -48,8 +47,9 @@ type 'a t =
   }
 
 let ptr = function
-  | Entry { ptr = -1; _ } -> invalid_arg "Entry has already been freed!"
-  | Entry { ptr; _ } -> ptr
+  | Entry { ptr; _ } ->
+    if ptr = -1 then invalid_arg "Entry has already been freed!"
+    else ptr
   | Empty -> assert false
 
 let create : type a. int -> a t =

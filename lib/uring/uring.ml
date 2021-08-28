@@ -142,7 +142,7 @@ module Uring = struct
   external register_bigarray : t ->  Cstruct.buffer -> unit = "ocaml_uring_register_ba"
   external submit : t -> int = "ocaml_uring_submit"
 
-  type id = Heap.ptr
+  type id = int
 
   type offset = Optint.Int63.t
   external submit_nop : t -> id -> bool = "ocaml_uring_submit_nop" [@@noalloc]
@@ -244,7 +244,7 @@ let exit t =
   Uring.exit t.uring;
   unregister_gc_root t
 
-let with_id_full : type a. a t -> (Heap.ptr -> bool) -> a -> extra_data:'b -> a job option =
+let with_id_full : type a. a t -> (int -> bool) -> a -> extra_data:'b -> a job option =
  fun t fn datum ~extra_data ->
   match Heap.alloc t.data datum ~extra_data with
   | exception Heap.No_space -> None
