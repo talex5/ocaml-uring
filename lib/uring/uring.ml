@@ -138,13 +138,10 @@ module Sketch = struct
 
   let length t = Bigarray.Array1.size_in_bytes t.buffer
 
-  let round a x = (x + (a - 1)) land (lnot (a - 1))
-  let round = round (Sys.word_size / 8)
-
+  (* Note: can be slightly negative if we just rounded [t.off] up. *)
   let avail t = (length t) - t.off
 
-  let alloc t alloc_len =
-    let alloc_len = round alloc_len in
+  let alloc_unaligned t alloc_len =
     if alloc_len > avail t then begin
       (* At least 64 bytes, at least twice the previous size, and
          at least big enough for the new allocation. *)
@@ -157,6 +154,17 @@ module Sketch = struct
     let off = t.off in
     t.off <- t.off + alloc_len;
     (t.buffer, off, alloc_len)
+
+  let alloc =
+    let bytes_per_word = Sys.word_size / 8 in
+    fun t alloc_len ->
+      let extra = t.off land (bytes_per_word - 1) in
+      if extra > 0 then (
+        (* Round t.off up to the next word boundary so that the
+           next allocation will be word-aligned. *)
+        t.off <- t.off + bytes_per_word - extra
+      );
+      alloc_unaligned t alloc_len
 
   let _cstruct_of_ptr ((buf, off, len) : ptr) =
     Cstruct.of_bigarray buf ~off ~len
@@ -180,7 +188,7 @@ module Sketch = struct
     external set : ptr -> string -> unit = "ocaml_uring_set_string" [@@noalloc]
 
     let alloc t s =
-      let ptr = alloc t (String.length s + 1) in
+      let ptr = alloc_unaligned t (String.length s + 1) in
       set ptr s;
       ptr
   end

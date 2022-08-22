@@ -616,7 +616,9 @@ value /* noalloc */
 ocaml_uring_set_string(value v_sketch_ptr, value v_string)
 {
   char *dst = Sketch_ptr_val(v_sketch_ptr);
-  strcpy(dst, String_val(v_string));
+  int len = Sketch_ptr_len_val(v_sketch_ptr);
+  // Note: OCaml strings include a terminating 0 byte and [len] includes this. *)
+  memcpy(dst, String_val(v_string), len);
   return (Val_unit);
 }
 
