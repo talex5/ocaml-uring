@@ -4,6 +4,8 @@
 #error "This file should only be compiled for no libc build"
 #endif
 
+#error "This file should only be compiled for no libc build!!"
+
 #include "lib.h"
 #include "syscall.h"
 
