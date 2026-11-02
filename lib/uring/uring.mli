@@ -913,7 +913,10 @@ module Sockaddr : sig
   type t
 
   val create : unit -> t
+
   val get : t -> Unix.sockaddr
+  (** Convert the result to an OCaml value. This must only be used after the
+      operation to set it has succeeded. *)
 end
 
 val accept : 'a t -> Unix.file_descr -> Sockaddr.t -> 'a -> 'a job option
@@ -981,17 +984,20 @@ val cancel : 'a t -> 'a job -> 'a -> 'a job option
 module Msghdr : sig
   type t
 
-  val create : ?n_fds:int -> ?addr:Sockaddr.t -> Cstruct.t list -> t
+  val create : ?n_fds:int -> ?addr:bool -> Cstruct.t list -> t
   (** [create buffs] makes a new [msghdr] using the [buffs]
       for the underlying [iovec].
 
       Requires [List.length buffs <= Uring.iov_max]
 
-      @param addr The remote address.
-                  Use {!Sockaddr.create} to create a dummy address that will be filled when data is received.
+      @param addr Whether to allocate space for remote address. Use {!get_addr} to retrieve it afterwards.
       @param n_fds Reserve space to receive this many FDs (default 0) *)
 
   val get_fds : t -> Unix.file_descr list
+
+  val get_addr : t -> Unix.sockaddr option
+  (** Get the sender address as an OCaml value. This must only be used after
+      the operation to set it has succeeded. *)
 end
 
 val send_msg : ?fds:Unix.file_descr list -> ?dst:Unix.sockaddr -> 'a t -> Unix.file_descr -> Cstruct.t list -> 'a -> 'a job option

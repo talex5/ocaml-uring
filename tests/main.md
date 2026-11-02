@@ -988,7 +988,7 @@ Invalid_argument "Can't use ring after Uring.exit has been called".
 # let r, w = Unix.pipe ();;
 val r : Unix.file_descr = <abstr>
 val w : Unix.file_descr = <abstr>
-# let t : [ `Recv | `Send ] Uring.t= Uring.create ~queue_depth:2 ();;
+# let t : [ `Recv | `Send ] Uring.t = Uring.create ~queue_depth:2 ();;
 val t : [ `Recv | `Send ] Uring.t = <abstr>
 # let a, b = Unix.(socketpair PF_UNIX SOCK_STREAM 0);;
 val a : Unix.file_descr = <abstr>
@@ -1042,6 +1042,60 @@ val r2 : unit = ()
 val w2 : unit = ()
 # let w : unit = Unix.close w;;
 val w : unit = ()
+# Uring.exit t;;
+- : unit = ()
+```
+
+Using a Unix-domain datagram socket with an explicit destination:
+
+```ocaml
+# let (a, a_addr), (b, b_addr) =
+  let make x =
+    let addr = Unix.ADDR_UNIX ("\000ocaml-uring-test-" ^ x ^ ".sock") in
+    let sock = Unix.(socket PF_UNIX SOCK_DGRAM 0) in
+    Unix.bind sock addr;
+    (sock, addr)
+  in
+  make "a", make "b";;
+val a : Unix.file_descr = <abstr>
+val a_addr : Unix.sockaddr = Unix.ADDR_UNIX "\000ocaml-uring-test-a.sock"
+val b : Unix.file_descr = <abstr>
+val b_addr : Unix.sockaddr = Unix.ADDR_UNIX "\000ocaml-uring-test-b.sock"
+
+# let t : [ `Recv | `Send ] Uring.t = Uring.create ~queue_depth:2 ();;
+val t : [ `Recv | `Send ] Uring.t = <abstr>
+
+# Uring.send_msg t a ~dst:b_addr [Cstruct.of_string "Test"] `Send;;
+- : [ `Recv | `Send ] Uring.job option = Some <abstr>
+# Uring.submit t;;
+- : int = 1
+# let sent = false;;
+val sent : bool = false
+# let sent = (consume_int ~fn:"send_msg" t = (`Send, 4));;
+val sent : bool = true
+```
+
+```ocaml
+# if not sent then mdx_skip "Sending failed; skip receiving part";;
+- : unit = ()
+
+# let buf = Cstruct.of_string "XXXX";;
+val buf : Cstruct.t = {Cstruct.buffer = <abstr>; off = 0; len = 4}
+# let msg = Uring.Msghdr.create ~addr:true [buf];;
+val msg : Uring.Msghdr.t = <abstr>
+
+# Uring.recv_msg t b msg `Recv;;
+- : [ `Recv | `Send ] Uring.job option = Some <abstr>
+# consume_int ~fn:"recv_msg" t;;
+- : [ `Recv | `Send ] * int = (`Recv, 4)
+
+# Cstruct.to_string buf;;
+- : string = "Test"
+
+# Uring.Msghdr.get_addr msg;;
+- : Unix.sockaddr option =
+Some (Unix.ADDR_UNIX "\000ocaml-uring-test-a.sock")
+
 # Uring.exit t;;
 - : unit = ()
 ```

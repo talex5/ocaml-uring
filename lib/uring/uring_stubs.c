@@ -772,6 +772,22 @@ ocaml_uring_extract_sockaddr(value v) {
   CAMLreturn(v_sockaddr);
 }
 
+value
+ocaml_uring_make_sockaddr_empty(value v_unit) {
+  CAMLparam0();
+  CAMLlocal1(v);
+  struct sock_addr_data *data;
+  v = caml_alloc_custom_mem(&sockaddr_ops, sizeof(struct sock_addr_data *), sizeof(struct sock_addr_data));
+  Sock_addr_val(v) = NULL;
+  data = (struct sock_addr_data *) caml_stat_alloc(sizeof(struct sock_addr_data));
+  Sock_addr_val(v) = data;
+  struct sockaddr_un *s_unix = &data->sock_addr_addr.s_unix;
+  s_unix->sun_family = -1;
+  s_unix->sun_path[0] = '\0';
+  data->sock_addr_len = sizeof(union sock_addr_union);
+  CAMLreturn(v);
+}
+
 #define Msghdr_val(v) (*((struct msghdr **) Data_custom_val(v)))
 
 static void finalize_msghdr(value v) {
@@ -818,7 +834,7 @@ ocaml_uring_make_msghdr(value v_n_fds, value v_fds, value v_sockaddr_opt) {
     struct sock_addr_data *addr = Sock_addr_val(Some_val(v_sockaddr_opt));
     // Store the address data in the message
     msg->msg_name = &(addr->sock_addr_addr);
-    msg->msg_namelen = sizeof(addr->sock_addr_addr);
+    msg->msg_namelen = addr->sock_addr_len;
   } else {
     msg->msg_name = NULL;
     msg->msg_namelen = 0;
@@ -847,6 +863,20 @@ ocaml_uring_make_msghdr(value v_n_fds, value v_fds, value v_sockaddr_opt) {
     }
   }
   CAMLreturn(v);
+}
+
+value
+ocaml_uring_extract_msghdr_sockaddr(value v_msghdr) {
+  CAMLparam1(v_msghdr);
+  CAMLlocal2(v_sockaddr, v_ret);
+  struct msghdr *msg = Msghdr_val(v_msghdr);
+  if (msg->msg_name == NULL) {
+    v_ret = Val_none;
+  } else {
+    v_sockaddr = caml_unix_alloc_sockaddr(msg->msg_name, msg->msg_namelen, -1);
+    v_ret = caml_alloc_some(v_sockaddr);
+  }
+  CAMLreturn(v_ret);
 }
 
 value
